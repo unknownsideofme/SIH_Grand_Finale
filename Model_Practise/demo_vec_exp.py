@@ -18,7 +18,7 @@ df.drop_duplicates(inplace=True)
 df.rename(columns={'Title Name': 'text'}, inplace=True)
 
 #Data Ingestion
-from langchain.document_loaders import DataFrameLoader
+from langchain_community.document_loaders import DataFrameLoader
 loader = DataFrameLoader(df)
 documents = loader.load()
 
@@ -31,8 +31,8 @@ split_docs = text_splitter.split_documents(documents)
 
 #Vector Embedding
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import OpenAIEmbeddings
-db = FAISS.from_documents(split_docs[:10], OpenAIEmbeddings()) 
+from langchain_openai.embeddings import OpenAIEmbeddings
+db = FAISS.from_documents(split_docs, OpenAIEmbeddings()) 
 
 
 # Save FAISS vector store

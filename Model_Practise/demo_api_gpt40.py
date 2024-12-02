@@ -7,6 +7,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 import uvicorn
+from pprint import pprint
 from langchain.schema import Document
 
 import os
@@ -108,13 +109,9 @@ retriever_chain = create_retrieval_chain(retriever, document_chain)
 class TitleRequest(BaseModel):
     title: str
 
-class VerificationResponse(BaseModel):
-    similarity_score: float
-    verification_probability: float
-    rejection_reasons: list[str]
-    suggestions: list[str]
 
-@app.post("/verify", response_model=VerificationResponse)
+
+@app.post("/verify")
 async def verify_title(request: TitleRequest):
     title = request.title
     
@@ -122,17 +119,10 @@ async def verify_title(request: TitleRequest):
     response = retriever_chain.invoke({"input": title})
     
     # Process the response from the retriever chain
-    if not response:
-        raise HTTPException(status_code=400, detail="No results found.")
-    
-    serializable_response = []
-    for doc in response:
-        serializable_response.append(DocumentModel(content=doc.content, metadata=doc.metadata).dict())
 
+    pprint(response['answer'])
     # Convert the serializable response to JSON format
-    response_json = json.dumps(serializable_response, indent=4)
-    print(response_json)
-
+    return json.dumps(response['answer'])
 # Run the app with uvicorn
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
