@@ -45,7 +45,7 @@ def calc_semantic_score (context , title , llm , db  ):
     )
     retriever = db.as_retriever()
     document_chain_semantic = create_stuff_documents_chain(llm, prompt)
-    retreival_chain_semantic = create_retrieval_chain(retriever, document_chain_phonatic)
+    retreival_chain_semantic = create_retrieval_chain(retriever, document_chain_semantic)
     
     res = retreival_chain_semantic.invoke({"input": title, "context": context})
     return res['answer']

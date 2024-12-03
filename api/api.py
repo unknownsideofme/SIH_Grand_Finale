@@ -14,20 +14,30 @@ import json
 import os
 from dotenv import load_dotenv
 import pickle
-from levens_dis import calc_levens_score
-from phon_score import calc_phonatic_score
-from semantic_score import calc_semantic_score
+from api.levens_dis import calc_levens_score
+from api.phon_score import calc_phonatic_score
+from api.semantic_score import calc_semantic_score
 
 
 
-'''def remove_newlines(obj):
-    if isinstance(obj, str):  # If it's a string, replace '\\n' with ''
-        return obj.replace("\\n", "").replace("\\", "").replace(" ", "")
+def remove_newlines(obj):
+    if isinstance(obj, str):
+        try:
+            # Try to parse the string as JSON (if it's JSON-like)
+            parsed_obj = json.loads(obj)
+            # If it can be parsed, recursively clean the nested structure
+            return remove_newlines(parsed_obj)
+        except json.JSONDecodeError:
+            # If it cannot be parsed (it's just a regular string), remove newlines and spaces
+            return obj.replace("\n", "").replace(" ", "")
+    
     elif isinstance(obj, list):  # If it's a list, process each element
         return [remove_newlines(item) for item in obj]
+    
     elif isinstance(obj, dict):  # If it's a dictionary, process each key-value pair
         return {key: remove_newlines(value) for key, value in obj.items()}
-    return obj  # For other data types, return as-is'''
+    
+    return obj  # For other data types, return as-is
     
     
     
@@ -89,7 +99,7 @@ def check_disallowed_words(title: str) -> bool:
     bool: True if the title contains disallowed words, False otherwise.
     """
     for word in disallowed_words:
-        if word.lower() in title.lower():
+        if word.lower() in title:
             return True
     return False
 
@@ -104,7 +114,42 @@ def calculate_similarity(title_input: TitleInput):
     title = title_input.title
     
     flag = check_disallowed_words(title)
-    if 
-     
     
+    if(flag):
+        response = {
+            "message" :{
+                "string_similar" : None , 
+                "phonetic_similar" : None ,
+                "semantic_similar" : None ,
+                "suggestions" : "Title contains disallowed words"
+            }
+        }
+        res = json.dumps(response)
+        cleared_res = remove_newlines(res)
+        return cleared_res
+        
+    else :
+        # Calculate Levenshtein distance
+        levens_score = calc_levens_score(context, title, llm, db)
+        # Calculate phonetic similarity
+        phonetic_score = calc_phonatic_score(context, title, llm, db)
+        # Calculate semantic similarity
+        semantic_score = calc_semantic_score(context, title, llm, db)
+        
+        response = {
+            "message" : {
+                "string_similar" : levens_score,
+                "phonetic_similar" : phonetic_score,
+                "semantic_similar" : semantic_score,
+                "suggestions" : "Sample Suggestions"
+            }
+        }
+        res = json.dumps(response)
+        cleared_res = remove_newlines(res)
+        return cleared_res
+        
+     
 
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
