@@ -1,15 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
 from langchain.prompts import PromptTemplate
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains import create_retrieval_chain
 from langchain_community.vectorstores import FAISS
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 import uvicorn
-from pprint import pprint
-from langchain.schema import Document
-from langchain.prompts import ChatPromptTemplate
 import json
 import os
 from dotenv import load_dotenv
@@ -17,7 +12,16 @@ import pickle
 from api.levens_dis import calc_levens_score
 from api.phon_score import calc_phonatic_score
 from api.semantic_score import calc_semantic_score
+from api.prefix_suffix import Pref_suff
+from api.suggestions import calc_suggestions
+import re
+from fastapi.middleware.cors import CORSMiddleware
 
+
+def clean_suggest(input_string):
+    # Remove extra newlines and spaces, but preserve internal content formatting
+    cleaned_string = re.sub(r'(\s*\n\s*)+', ' ', input_string)  # Remove excessive newlines and spaces
+    return cleaned_string.strip()
 
 
 def remove_newlines(obj):
@@ -29,7 +33,7 @@ def remove_newlines(obj):
             return remove_newlines(parsed_obj)
         except json.JSONDecodeError:
             # If it cannot be parsed (it's just a regular string), remove newlines and spaces
-            return obj.replace("\n", "").replace(" ", "")
+            return obj.replace("\n", "").replace("  ", "")
     
     elif isinstance(obj, list):  # If it's a list, process each element
         return [remove_newlines(item) for item in obj]
@@ -62,7 +66,13 @@ os.environ["LANGCHAIN_PROJECT"] = "SLIFTEX"
 
 # Initialize FastAPI
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace "*" with specific domains for better security
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 
@@ -82,7 +92,7 @@ context = db
 
 
 # Initialize the LLM model (OpenAI GPT-3.5-turbo)
-llm = ChatOpenAI(model = "gpt-3.5-turbo", api_key=api_key)
+llm = ChatOpenAI(model = "gpt-40", api_key=api_key)
 
 # Disallowed Words
 
@@ -129,6 +139,8 @@ def calculate_similarity(title_input: TitleInput):
         return cleared_res
         
     else :
+        #prefix and suffix removal
+        pref_suff_score = Pref_suff(context, title, llm, db)
         # Calculate Levenshtein distance
         levens_score = calc_levens_score(context, title, llm, db)
         # Calculate phonetic similarity
@@ -136,20 +148,36 @@ def calculate_similarity(title_input: TitleInput):
         # Calculate semantic similarity
         semantic_score = calc_semantic_score(context, title, llm, db)
         
+        
         response = {
             "message" : {
                 "string_similar" : levens_score,
                 "phonetic_similar" : phonetic_score,
-                "semantic_similar" : semantic_score,
-                "suggestions" : "Sample Suggestions"
+                "semantic_similar" : semantic_score,  
+                "prefix_suffix_score" : pref_suff_score
             }
         }
         res = json.dumps(response)
         cleared_res = remove_newlines(res)
-        return cleared_res
+        suggest = calc_suggestions(cleared_res, title, llm)
+        response1 = {
+            
+            "string_similar" : levens_score,
+            "phonetic_similar" : phonetic_score,
+            "semantic_similar" : semantic_score,
+                
+            
+        }
+        cleared_res1 = {
+            "message" : remove_newlines(json.dumps(response1)),
+            "suggestions" : remove_newlines(json.dumps(suggest))
+        }
+        print(response)
+        return cleared_res1
         
      
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app)
+

@@ -20,7 +20,7 @@ def calc_phonatic_score (context , title , llm , db  ):
         2. Then you need to use metaphone phonetic algorithm to calculate the similarity between the input title and the existing titles.
         3. You need to return all the titles that are phonatically similar to the input title.
         4. Make sure to return the value of the similarity between the input title and the existing titles that we get using the metaphone phonetic algorithm.
-        
+        5. Strip the prefixes and suffixes from the input title before calculating the phonetic similarity.
         Output Format:
         {{
             {{

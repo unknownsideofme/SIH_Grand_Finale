@@ -146,3 +146,8 @@ def search_title(title_input: TitleInput):
 
 if __name__ == "__main__":
     uvicorn.run(app)
+    
+
+@app.post("/sliftex/update")
+def update():
+    return "Update successful"

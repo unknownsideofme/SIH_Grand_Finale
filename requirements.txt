@@ -21,3 +21,4 @@ seaborn
 FastAPI
 uvicorn
 datasets
+langchain-openai

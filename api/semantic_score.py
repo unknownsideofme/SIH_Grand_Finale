@@ -20,7 +20,7 @@ def calc_semantic_score (context , title , llm , db  ):
         2. Then you need to compare the semantic meaning similarity between the input title and the existing titles.
         3. You need to compare across all the possible different languages int he existing title and the input title.
         4. Make sure to return the value of the similarity between the input title and the existing titles that we get using the semantic meaning comparison algorithm.
-        
+        5. Strip the prefixes and suffixes from the input title before calculating the semantic similarity.
         Output Format:
         {{
             {{
